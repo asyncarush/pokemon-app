@@ -1,5 +1,4 @@
 "use client"
-
 import { useEffect, useState, useRef } from "react";
 import {SearchedPokemon} from "@/typings"
 import PokemonGrid from "@/components/PokemonGrid";
@@ -44,7 +43,7 @@ export default function Page() {
         setTotal(data.count);
         
         const pokemons = await Promise.all(
-          data.results.map(async (pokemon: any) => {
+          data.results.map(async (pokemon: { name: string; url: string }) => {
             const res = await fetch(pokemon.url, { signal: controller.signal });
             const details = await res.json();
             return {
@@ -56,8 +55,8 @@ export default function Page() {
         );
         
         if (!controller.signal.aborted) setPokemonList(pokemons);
-      } catch (err: any) {
-        if (err.name !== "AbortError") setError(err.message ?? "Failed to fetch");
+      } catch (err: Error | unknown) {
+        if (err instanceof Error && err.name !== "AbortError") setError(err.message ?? "Failed to fetch");
       } finally {
         if (!controller.signal.aborted) setLoading(false);
       }
@@ -72,13 +71,15 @@ export default function Page() {
     setPage(1);
   }, [pageSize]);
 
-  // debounce Effect
+  // Debounce Effect
   useEffect(() => {
+    
     if (!search) {
       setPokemon(null);
       setError("");
       return;
     }
+
     setLoading(true);
     setError("");
 
@@ -92,17 +93,21 @@ export default function Page() {
             `https://pokeapi.co/api/v2/pokemon/${search.toLowerCase()}`,
             { signal: controller.signal }
           );
+
           if (!response.ok) throw new Error("Pokémon not found");
+          
           const pokemonData = await response.json();
+          
           const pokemonObject = {
             name: pokemonData.name,
             image: pokemonData.sprites?.other?.["official-artwork"]?.front_default ?? null,
             id: pokemonData.id,
           };
+          
           setPokemon(pokemonObject);
-        } catch (err: any) {
+        } catch (err: Error | unknown) {
           setPokemon(null);
-          setError(err.message ?? "Failed to fetch");
+          setError(err instanceof Error ? err.message : "Failed to fetch");
         } finally {
           setLoading(false);
         }
@@ -118,9 +123,9 @@ export default function Page() {
 
   useEffect(() => {
     function calculatePageSize(width: number) {
-      if (width < 640) return 6; // sm and below
-      if (width < 1024) return 8; // md
-      return 12; // lg and above
+      if (width < 640) return 6; 
+      if (width < 1024) return 8;
+      return 12;
     }
 
     const setResponsivePageSize = () => {
@@ -135,7 +140,6 @@ export default function Page() {
 
   return (
     <div className="relative flex flex-col h-full items-center bg-gradient-to-br from-slate-950 via-slate-800 to-slate-950 rounded-lg w-full max-w-7xl md:h-[90vh] overflow-hidden">
-      
       <div className="flex flex-col w-full items-center pt-8 pb-32 relative z-10">
         <h1 className="text-5xl sm:text-6xl font-extrabold bg-gradient-to-r from-blue-400 via-yellow-300 to-red-500 bg-clip-text text-transparent drop-shadow-lg select-none">Pokémon Search</h1>
         <div className="relative w-full flex flex-col items-center">
@@ -146,7 +150,7 @@ export default function Page() {
             placeholder="Search by name e.g. Pikachu"
             className="mt-8 rounded-lg focus:ring-2 focus:ring-yellow-400/60 focus:outline-none bg-slate-700/80 placeholder-gray-300 p-3 w-11/12 sm:w-2/3 md:w-1/2 z-10"
           />
-          {/* Absolute search result under input */}
+
           {pokemon && !loading && !error && (
             <div className="absolute left-1/2 top-full -translate-x-1/2 mt-4 w-full sm:w-2/3 md:w-1/2 z-20">
               <SearchResult pokemon={pokemon} />
@@ -161,8 +165,6 @@ export default function Page() {
         )}
       </div>
 
-      
-      
       <div className="absolute bottom-0 left-0 w-full flex flex-col items-center z-0 bg-gradient-to-t from-slate-900/90 via-slate-900/70 to-transparent pt-4 pb-6 border-t border-slate-700">
         <PokemonGrid pokemonList={pokemonList} />
         <Pagination page={page} setPage={setPage} total={total} pageSize={pageSize} />
