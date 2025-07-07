@@ -9,7 +9,7 @@ export default function SearchResult({ pokemon }: { pokemon: SearchedPokemon }) 
         alt={pokemon.name}
         width={120}
         height={120}
-        className="rounded-xl bg-white/30"
+        className="rounded-xl"
       />
       <div className="flex flex-col gap-2">
         <h2 className="text-3xl font-bold capitalize">{pokemon.name}</h2>
